@@ -60,7 +60,7 @@ function recupererEtClasserTaches() {
   }
   
   const lignesSheets = [];
-  const stats = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, total: 0 };
+  const stats = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, total: 0, tasksQ1: [], tasksQ2: [], tasksQ3: [], tasksQ4: [] };
   const maintenant = new Date();
   
   if (taches.items) {
@@ -100,15 +100,19 @@ function recupererEtClasserTaches() {
       if (estUrgent && estImportant) {
         quadrant = 'Q1 (Crises)';
         stats.Q1++;
+        stats.tasksQ1.push(titre);
       } else if (!estUrgent && estImportant) {
         quadrant = 'Q2 (Stratégie)';
         stats.Q2++;
+        stats.tasksQ2.push(titre);
       } else if (estUrgent && !estImportant) {
         quadrant = 'Q3 (Bruit)';
         stats.Q3++;
+        stats.tasksQ3.push(titre);
       } else {
         quadrant = 'Q4 (Distractions)';
         stats.Q4++;
+        stats.tasksQ4.push(titre);
       }
       
       stats.total++;
