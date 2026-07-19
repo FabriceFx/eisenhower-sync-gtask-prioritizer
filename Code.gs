@@ -178,9 +178,11 @@ function mettreAJourFeuille(lignes) {
     }
     const valeursASauvegarder = feuille.getRange(2, 1, numRows, derniereColonne).getValues();
     const dateArchive = new Date();
-    // Filtrer les lignes vides et ajouter la date d'archivage
+    const titresNouveaux = lignes.map(row => row[0]); // Le titre est dans la première colonne
+    // Archiver uniquement les lignes (tâches) qui ont disparu de la nouvelle liste
     const lignesArchive = valeursASauvegarder
       .filter(row => row.join('').trim() !== '')
+      .filter(row => !titresNouveaux.includes(row[0]))
       .map(row => [dateArchive].concat(row));
       
     if (lignesArchive.length > 0) {
