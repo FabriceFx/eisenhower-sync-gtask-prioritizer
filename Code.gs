@@ -29,44 +29,54 @@ function synchroniserMatriceEisenhower() {
  * Récupère les tâches non terminées depuis Google Tasks et les classe par quadrant.
  * @returns {Object} Un objet contenant les lignes pour Sheets et les statistiques pour l'email.
  */
+/**
+ * Exécute un appel API avec backoff exponentiel.
+ */
+function fetchAvecBackoff(apiCall) {
+  let retryCount = 0;
+  const maxRetries = 3;
+  while (retryCount < maxRetries) {
+    try {
+      return apiCall();
+    } catch (e) {
+      retryCount++;
+      if (retryCount >= maxRetries) throw new Error('Échec API après plusieurs tentatives : ' + e.message);
+      Utilities.sleep(Math.pow(2, retryCount) * 1000);
+    }
+  }
+}
+
 function recupererEtClasserTaches() {
-  const listesTaches = Tasks.Tasklists.list();
-  if (!listesTaches.items || listesTaches.items.length === 0) {
+  const listesTaches = fetchAvecBackoff(() => Tasks.Tasklists.list());
+  if (!listesTaches || !listesTaches.items || listesTaches.items.length === 0) {
     throw new Error('Aucune liste de tâches trouvée.');
   }
   
-  // Utiliser la liste par défaut (souvent la première) ou '@default'
-  const idListe = '@default'; 
+  let toutesLesTaches = [];
   
-  let taches;
-  let retryCount = 0;
-  const maxRetries = 3;
-  let success = false;
-  
-  while (!success && retryCount < maxRetries) {
-    try {
-      try {
-        taches = Tasks.Tasks.list(idListe, { showHidden: false });
-      } catch (e) {
-        // Si '@default' échoue, on prend la première liste disponible
-        taches = Tasks.Tasks.list(listesTaches.items[0].id, { showHidden: false });
+  // Parcourir toutes les listes de tâches de l'utilisateur
+  listesTaches.items.forEach(liste => {
+    let pageToken = null;
+    do {
+      const option = { showHidden: false, maxResults: 100 };
+      if (pageToken) option.pageToken = pageToken;
+      
+      const response = fetchAvecBackoff(() => Tasks.Tasks.list(liste.id, option));
+      
+      if (response && response.items) {
+        toutesLesTaches = toutesLesTaches.concat(response.items);
       }
-      success = true;
-    } catch (e) {
-      retryCount++;
-      if (retryCount >= maxRetries) throw new Error('Échec de la récupération des tâches après plusieurs tentatives : ' + e.message);
-      Utilities.sleep(Math.pow(2, retryCount) * 1000); // Backoff exponentiel : 2s, 4s...
-    }
-  }
+      pageToken = response ? response.nextPageToken : null;
+    } while (pageToken);
+  });
   
   const lignesSheets = [];
   const stats = { Q1: 0, Q2: 0, Q3: 0, Q4: 0, total: 0, tasksQ1: [], tasksQ2: [], tasksQ3: [], tasksQ4: [] };
   const maintenant = new Date();
   
-  if (taches.items) {
-    taches.items.forEach(tache => {
-      // Ignorer les tâches terminées (au cas où, bien que l'API filtre souvent avec d'autres params)
-      if (tache.status === 'completed') return;
+  toutesLesTaches.forEach(tache => {
+    // Ignorer les tâches terminées (au cas où, bien que l'API filtre souvent avec d'autres params)
+    if (tache.status === 'completed') return;
       
       const titre = tache.title || 'Sans titre';
       const notes = tache.notes || '';
@@ -127,8 +137,7 @@ function recupererEtClasserTaches() {
         'En cours',
         notes
       ]);
-    });
-  }
+  });
   
   return { lignes: lignesSheets, stats: stats };
 }
@@ -149,6 +158,10 @@ function mettreAJourFeuille(lignes) {
   if (!feuille) {
     feuille = classeur.getSheets()[0];
   }
+  
+  // Valider et forcer les en-têtes
+  const entetesAttendus = ['Titre de la tâche', 'Date d\'échéance', 'Urgent', 'Important', 'Quadrant', 'Statut', 'Notes'];
+  feuille.getRange(1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]);
   
   // Effacer les anciennes données à partir de la ligne 2
   const lastRow = feuille.getLastRow();

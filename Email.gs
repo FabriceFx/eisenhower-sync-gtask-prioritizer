@@ -23,7 +23,12 @@ function envoyerRapportEmail(stats) {
   template.alerteQ1 = alerteQ1;
   
   const htmlBody = template.evaluate().getContent();
-  const emailUtilisateur = Session.getActiveUser().getEmail();
+  const emailUtilisateur = Session.getActiveUser().getEmail() || Session.getEffectiveUser().getEmail();
+  
+  if (!emailUtilisateur) {
+    console.warn("Impossible de déterminer l'adresse email de l'utilisateur pour l'envoi.");
+    return;
+  }
   
   // Envoi de l'email
   MailApp.sendEmail({
