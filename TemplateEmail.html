@@ -113,6 +113,23 @@
       background-color: #f8f9fa;
       border-top: 1px solid #eeeeee;
     }
+    .rules-box {
+      background-color: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 15px;
+      margin-bottom: 25px;
+      font-size: 13px;
+      color: #0d47a1;
+      border-radius: 4px;
+      line-height: 1.5;
+    }
+    .rules-box code {
+      background-color: rgba(25, 118, 210, 0.1);
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-weight: bold;
+    }
     
     .task-list-section {
       margin-top: 40px;
@@ -184,6 +201,12 @@
           <div class="stat-label">Tâches Stratégiques (Q2)</div>
           <span class="goal-text">Objectif : 70%</span>
         </div>
+      </div>
+      
+      <div class="rules-box">
+        <strong>💡 Règles de classification :</strong><br>
+        <strong>Importance :</strong> Tag <code>#important</code> ou <code>#strategie</code> dans les notes de la tâche.<br>
+        <strong>Urgence :</strong> Date d'échéance à 3 jours ou moins, OU tag <code>#urgent</code>.
       </div>
       
       <table class="matrix-table">
