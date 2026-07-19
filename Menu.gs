@@ -3,15 +3,52 @@
  */
 
 /**
+ * Dictionnaire de traduction
+ */
+const I18N = {
+  fr: {
+    menu_sync: '🔄 Synchroniser les tâches',
+    menu_about: 'ℹ️ À propos',
+    about_title: 'Matrice Eisenhower',
+    about_desc1: 'Cet outil synchronise vos tâches Google Tasks pour les catégoriser selon la matrice d\'Eisenhower.',
+    about_desc2: 'Gérez vos priorités, concentrez-vous sur la stratégie (Q2) et recevez un rapport quotidien directement dans votre boîte de réception.',
+    developed_by: 'Développé par',
+    close: 'Fermer',
+    error_title: 'Erreur',
+    menu_title: 'À propos - Matrice Eisenhower'
+  },
+  en: {
+    menu_sync: '🔄 Sync Tasks',
+    menu_about: 'ℹ️ About',
+    about_title: 'Eisenhower Matrix',
+    about_desc1: 'This tool syncs your Google Tasks to categorize them using the Eisenhower Matrix.',
+    about_desc2: 'Manage your priorities, focus on strategy (Q2), and receive a daily report directly in your inbox.',
+    developed_by: 'Developed by',
+    close: 'Close',
+    error_title: 'Error',
+    menu_title: 'About - Eisenhower Matrix'
+  }
+};
+
+/**
+ * Récupère les traductions selon la langue de l'utilisateur.
+ */
+function getTranslations() {
+  const locale = Session.getActiveUserLocale() || 'fr';
+  return locale.startsWith('en') ? I18N.en : I18N.fr;
+}
+
+/**
  * Fonction exécutée à l'ouverture du classeur.
  * Ajoute le menu personnalisé.
  */
 function onOpen() {
+  const t = getTranslations();
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('⚙️ Eisenhower')
-    .addItem('🔄 Synchroniser les tâches', 'synchroniserMatriceEisenhower')
+    .addItem(t.menu_sync, 'synchroniserMatriceEisenhower')
     .addSeparator()
-    .addItem('ℹ️ À propos', 'afficherAPropos')
+    .addItem(t.menu_about, 'afficherAPropos')
     .addToUi();
 }
 
@@ -19,6 +56,7 @@ function onOpen() {
  * Affiche la boîte de dialogue "À propos" en utilisant Material Design 3.
  */
 function afficherAPropos() {
+  const t = getTranslations();
   const htmlStr = `
     <!DOCTYPE html>
     <html lang="fr">
@@ -88,25 +126,28 @@ function afficherAPropos() {
     </head>
     <body>
       <div class="card">
-        <h2>Matrice Eisenhower</h2>
-        <p>Cet outil synchronise vos tâches Google Tasks pour les catégoriser selon la matrice d'Eisenhower.</p>
-        <p>Gérez vos priorités, concentrez-vous sur la stratégie (Q2) et recevez un rapport quotidien directement dans votre boîte de réception.</p>
+        <h2><?= t.about_title ?></h2>
+        <p><?= t.about_desc1 ?></p>
+        <p><?= t.about_desc2 ?></p>
         <div class="dev-info">
-          Développé par <strong>Fabrice Faucheux</strong><br>
+          <?= t.developed_by ?> <strong>Fabrice Faucheux</strong><br>
           <a href="https://faucheux.bzh" target="_blank">https://faucheux.bzh</a>
         </div>
-        <button class="btn" onclick="google.script.host.close()">Fermer</button>
+        <button class="btn" onclick="google.script.host.close()"><?= t.close ?></button>
       </div>
     </body>
     </html>
   `;
   
-  const htmlOutput = HtmlService.createHtmlOutput(htmlStr)
+  const template = HtmlService.createTemplate(htmlStr);
+  template.t = t;
+  
+  const htmlOutput = template.evaluate()
     .setWidth(400)
     .setHeight(320)
-    .setTitle('À propos - Matrice Eisenhower');
+    .setTitle(t.menu_title);
     
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'À propos');
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, t.menu_about);
 }
 
 /**
@@ -114,6 +155,7 @@ function afficherAPropos() {
  * @param {string} message Le message d'erreur.
  */
 function afficherErreur(message) {
+  const t = getTranslations();
   const htmlStr = `
     <!DOCTYPE html>
     <html lang="fr">
@@ -169,9 +211,9 @@ function afficherErreur(message) {
     </head>
     <body>
       <div class="card">
-        <h2>Erreur</h2>
+        <h2><?= t.error_title ?></h2>
         <p><?= message ?></p>
-        <button class="btn" onclick="google.script.host.close()">Fermer</button>
+        <button class="btn" onclick="google.script.host.close()"><?= t.close ?></button>
       </div>
     </body>
     </html>
@@ -179,11 +221,12 @@ function afficherErreur(message) {
   
   const template = HtmlService.createTemplate(htmlStr);
   template.message = message;
+  template.t = t;
   
   const htmlOutput = template.evaluate()
     .setWidth(400)
     .setHeight(250)
-    .setTitle('Erreur');
+    .setTitle(t.error_title);
     
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Erreur');
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, t.error_title);
 }
