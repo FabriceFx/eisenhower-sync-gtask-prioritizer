@@ -261,7 +261,8 @@ function mettreAJourFeuille(lignes) {
   
   // Valider et forcer les en-têtes (Ajout de la colonne Effort)
   const entetesAttendus = ['Titre de la tâche', 'Date d\'échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes'];
-  getRangeSafe(feuille, 1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]);
+  getRangeSafe(feuille, 1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]).setFontWeight('bold');
+  feuille.setFrozenRows(1);
   
   // Effacer les anciennes données à partir de la ligne 2
   const lastRow = feuille.getLastRow();
@@ -281,6 +282,10 @@ function mettreAJourFeuille(lignes) {
       // Insérer les entêtes si la feuille est vierge
       getRangeSafe(archiveFeuille, 1, 1, 1, entetesArchives.length).setValues([entetesArchives]);
     }
+    // S'assurer que la première ligne est toujours en gras et figée
+    getRangeSafe(archiveFeuille, 1, 1, 1, entetesArchives.length).setFontWeight('bold');
+    archiveFeuille.setFrozenRows(1);
+    
     const valeursASauvegarder = getRangeSafe(feuille, 2, 1, numRows, derniereColonne).getValues();
     const dateArchive = new Date();
     const titresNouveaux = lignes.map(row => row[0]); // Le titre est dans la première colonne
