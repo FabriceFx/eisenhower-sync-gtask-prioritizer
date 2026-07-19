@@ -56,6 +56,9 @@ function recupererEtClasserTaches() {
   
   // Parcourir toutes les listes de tâches de l'utilisateur
   listesTaches.items.forEach(liste => {
+    const titreListe = liste.title.toLowerCase();
+    const estListeStrategique = titreListe.includes('stratégie') || titreListe.includes('strategie') || titreListe.includes('important');
+    
     let pageToken = null;
     do {
       const option = { showHidden: false, maxResults: 100 };
@@ -64,6 +67,7 @@ function recupererEtClasserTaches() {
       const response = fetchAvecBackoff(() => Tasks.Tasks.list(liste.id, option));
       
       if (response && response.items) {
+        response.items.forEach(t => t._estListeStrategique = estListeStrategique);
         toutesLesTaches = toutesLesTaches.concat(response.items);
       }
       pageToken = response ? response.nextPageToken : null;
@@ -86,13 +90,13 @@ function recupererEtClasserTaches() {
       
       const contenuRecherche = (titre + ' ' + notes).toLowerCase();
       
-      // Déterminer l'importance
-      if (contenuRecherche.includes('#important') || contenuRecherche.includes('#strategie')) {
+      // Déterminer l'importance (Tags, Emojis, ou Liste)
+      if (contenuRecherche.includes('#important') || contenuRecherche.includes('#strategie') || contenuRecherche.includes('⭐') || tache._estListeStrategique) {
         estImportant = true;
       }
       
-      // Déterminer l'urgence
-      if (contenuRecherche.includes('#urgent')) {
+      // Déterminer l'urgence (Tags, Emojis, ou Date)
+      if (contenuRecherche.includes('#urgent') || contenuRecherche.includes('🔴')) {
         estUrgent = true;
       } else if (tache.due) {
         const dateEcheance = new Date(tache.due);
@@ -107,41 +111,96 @@ function recupererEtClasserTaches() {
         }
       }
       
+      // Déterminer l'Effort (ICE Scoring)
+      const estQuickWin = contenuRecherche.includes('#quickwin') || contenuRecherche.includes('⚡');
+      const estLourd = contenuRecherche.includes('#lourd') || contenuRecherche.includes('🏋️');
+      const effortTexte = estQuickWin ? 'Quick Win ⚡' : (estLourd ? 'Lourd 🏋️' : 'Normal');
+      
+      // Objet tâche pour l'email et le tri
+      const objTache = { titre: titre, quickwin: estQuickWin, lourd: estLourd, due: tache.due };
+      
       // Déduire le quadrant
       let quadrant = '';
       if (estUrgent && estImportant) {
         quadrant = 'Q1 (Crises)';
         stats.Q1++;
-        stats.tasksQ1.push(titre);
+        stats.tasksQ1.push(objTache);
       } else if (!estUrgent && estImportant) {
         quadrant = 'Q2 (Stratégie)';
         stats.Q2++;
-        stats.tasksQ2.push(titre);
+        stats.tasksQ2.push(objTache);
       } else if (estUrgent && !estImportant) {
         quadrant = 'Q3 (Bruit)';
         stats.Q3++;
-        stats.tasksQ3.push(titre);
+        stats.tasksQ3.push(objTache);
       } else {
         quadrant = 'Q4 (Distractions)';
         stats.Q4++;
-        stats.tasksQ4.push(titre);
+        stats.tasksQ4.push(objTache);
       }
       
       stats.total++;
       
-      // Construire la ligne pour Sheets
+      // Construire la ligne pour Sheets (avec la nouvelle colonne Effort)
       lignesSheets.push([
         titre,
         dateEcheanceStr,
         estUrgent ? 'Oui' : 'Non',
         estImportant ? 'Oui' : 'Non',
+        effortTexte,
         quadrant,
         'En cours',
         notes
       ]);
   });
   
+  // Trier les tâches pour l'email (Quick Wins en premier, Lourds à la fin)
+  const triEffort = (a, b) => {
+    if (a.quickwin && !b.quickwin) return -1;
+    if (!a.quickwin && b.quickwin) return 1;
+    if (a.lourd && !b.lourd) return 1;
+    if (!a.lourd && b.lourd) return -1;
+    return 0;
+  };
+  stats.tasksQ1.sort(triEffort);
+  stats.tasksQ2.sort(triEffort);
+  stats.tasksQ3.sort(triEffort);
+  stats.tasksQ4.sort(triEffort);
+  
+  // Timeboxing Calendrier pour les tâches Q1 et Q2
+  try {
+    timeboxerTachesCritiques(stats.tasksQ1.concat(stats.tasksQ2));
+  } catch (e) {
+    console.warn("Erreur lors du timeboxing calendrier : ", e.message);
+  }
+  
   return { lignes: lignesSheets, stats: stats };
+}
+
+/**
+ * Crée des événements "Focus" dans l'agenda pour les tâches urgentes/importantes dues aujourd'hui ou demain.
+ */
+function timeboxerTachesCritiques(tachesCritiques) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+  
+  const cal = CalendarApp.getDefaultCalendar();
+  const events = cal.getEvents(today, endOfTomorrow);
+  const eventTitles = events.map(e => e.getTitle());
+  
+  tachesCritiques.forEach(t => {
+    if (t.due) {
+      const dueDate = new Date(t.due);
+      // Vérifier si la tâche est prévue pour aujourd'hui ou demain
+      if (dueDate >= today && dueDate < endOfTomorrow) {
+        const focusTitle = "🎯 Focus : " + t.titre;
+        if (!eventTitles.includes(focusTitle)) {
+          cal.createAllDayEvent(focusTitle, dueDate);
+        }
+      }
+    }
+  });
 }
 
 /**
@@ -161,13 +220,13 @@ function mettreAJourFeuille(lignes) {
     feuille = classeur.getSheets()[0];
   }
   
-  // Valider et forcer les en-têtes
-  const entetesAttendus = ['Titre de la tâche', 'Date d\'échéance', 'Urgent', 'Important', 'Quadrant', 'Statut', 'Notes'];
+  // Valider et forcer les en-têtes (Ajout de la colonne Effort)
+  const entetesAttendus = ['Titre de la tâche', 'Date d\'échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes'];
   feuille.getRange(1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]);
   
   // Effacer les anciennes données à partir de la ligne 2
   const lastRow = feuille.getLastRow();
-  const derniereColonne = Math.max(feuille.getLastColumn(), 7);
+  const derniereColonne = Math.max(feuille.getLastColumn(), 8);
   
   if (lastRow >= 2) {
     const numRows = lastRow - 1;
@@ -176,7 +235,7 @@ function mettreAJourFeuille(lignes) {
     let archiveFeuille = classeur.getSheetByName('Archives');
     if (!archiveFeuille) {
       archiveFeuille = classeur.insertSheet('Archives');
-      archiveFeuille.appendRow(['Date Archivage', 'Titre', 'Échéance', 'Urgent', 'Important', 'Quadrant', 'Statut', 'Notes']);
+      archiveFeuille.appendRow(['Date Archivage', 'Titre', 'Échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes']);
     }
     const valeursASauvegarder = feuille.getRange(2, 1, numRows, derniereColonne).getValues();
     const dateArchive = new Date();
@@ -203,7 +262,7 @@ function mettreAJourFeuille(lignes) {
   const sheetArchives = classeur.getSheetByName('Archives');
   if (sheetArchives && sheetArchives.getLastRow() > 1) {
     // Supprime les doublons en ignorant la colonne Date Archivage (col 1).
-    // On se base sur le Titre (2), Échéance (3), et Notes (8)
-    sheetArchives.getDataRange().removeDuplicates([2, 3, 8]);
+    // On se base sur le Titre (2), Échéance (3), Effort (6) et Notes (9)
+    sheetArchives.getDataRange().removeDuplicates([2, 3, 6, 9]);
   }
 }
