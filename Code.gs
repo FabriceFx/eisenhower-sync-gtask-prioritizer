@@ -196,4 +196,12 @@ function mettreAJourFeuille(lignes) {
   if (lignes.length > 0) {
     feuille.getRange(2, 1, lignes.length, lignes[0].length).setValues(lignes);
   }
+  
+  // Nettoyage automatique des doublons dans l'onglet Archives
+  const sheetArchives = classeur.getSheetByName('Archives');
+  if (sheetArchives && sheetArchives.getLastRow() > 1) {
+    // Supprime les doublons en ignorant la colonne Date Archivage (col 1).
+    // On se base sur le Titre (2), Échéance (3), et Notes (8)
+    sheetArchives.getDataRange().removeDuplicates([2, 3, 8]);
+  }
 }
