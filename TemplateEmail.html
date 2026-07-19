@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 20px;
+      color: #333333;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    .header {
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      color: #ffffff;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .mantra {
+      font-style: italic;
+      font-size: 16px;
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px 20px;
+    }
+    .alert {
+      background-color: #fff3cd;
+      color: #856404;
+      padding: 15px;
+      border-left: 5px solid #ffeeba;
+      border-radius: 4px;
+      margin-bottom: 25px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .stats-container {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .stat-box {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 15px;
+      display: inline-block;
+      width: 45%;
+      margin: 0 2%;
+      box-sizing: border-box;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a2a6c;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #6c757d;
+    }
+    .goal-text {
+      font-size: 12px;
+      color: #28a745;
+      margin-top: 5px;
+      display: block;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 10px;
+    }
+    .matrix-cell {
+      width: 50%;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      color: white;
+    }
+    .q1 { background: linear-gradient(135deg, #e53935, #c62828); }
+    .q2 { background: linear-gradient(135deg, #43a047, #2e7d32); }
+    .q3 { background: linear-gradient(135deg, #fb8c00, #ef6c00); }
+    .q4 { background: linear-gradient(135deg, #757575, #424242); }
+    
+    .quadrant-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .quadrant-count {
+      font-size: 32px;
+      font-weight: 800;
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: #999999;
+      background-color: #f8f9fa;
+      border-top: 1px solid #eeeeee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Votre Matrice Eisenhower</h1>
+      <div class="mantra">"Ne confondez pas le bruit et la musique."</div>
+    </div>
+    
+    <div class="content">
+      <? if (alerteQ1) { ?>
+        <div class="alert">
+          ⚠️ Attention : vous gérez des crises et non une stratégie.
+        </div>
+      <? } ?>
+      
+      <div class="stats-container">
+        <div class="stat-box">
+          <div class="stat-value"><?= stats.total ?></div>
+          <div class="stat-label">Tâches totales</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value"><?= partQ2 ?>%</div>
+          <div class="stat-label">Tâches Stratégiques (Q2)</div>
+          <span class="goal-text">Objectif : 70%</span>
+        </div>
+      </div>
+      
+      <table class="matrix-table">
+        <tr>
+          <td class="matrix-cell q1">
+            <div class="quadrant-title">Q1 - Crises</div>
+            <div class="quadrant-count"><?= stats.Q1 ?></div>
+            <div style="font-size: 12px; margin-top: 5px;">Urgent & Important</div>
+          </td>
+          <td class="matrix-cell q2">
+            <div class="quadrant-title">Q2 - Stratégie</div>
+            <div class="quadrant-count"><?= stats.Q2 ?></div>
+            <div style="font-size: 12px; margin-top: 5px;">Important, Non Urgent</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="matrix-cell q3">
+            <div class="quadrant-title">Q3 - Bruit</div>
+            <div class="quadrant-count"><?= stats.Q3 ?></div>
+            <div style="font-size: 12px; margin-top: 5px;">Urgent, Non Important</div>
+          </td>
+          <td class="matrix-cell q4">
+            <div class="quadrant-title">Q4 - Distractions</div>
+            <div class="quadrant-count"><?= stats.Q4 ?></div>
+            <div style="font-size: 12px; margin-top: 5px;">Ni Urgent, Ni Important</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    
+    <div class="footer">
+      Généré automatiquement par votre script Matrice Eisenhower.
+    </div>
+  </div>
+</body>
+</html>
