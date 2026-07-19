@@ -196,7 +196,24 @@ function timeboxerTachesCritiques(tachesCritiques) {
       if (dueDate >= today && dueDate < endOfTomorrow) {
         const focusTitle = "🎯 Focus : " + t.titre;
         if (!eventTitles.includes(focusTitle)) {
-          cal.createAllDayEvent(focusTitle, dueDate);
+          try {
+            // Tentative de création d'un événement "Temps de concentration" (focusTime) 
+            // via l'API Calendar avancée. Dispo surtout sur Workspace.
+            const dateStr = Utilities.formatDate(dueDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+            const nextDate = new Date(dueDate.getTime() + 24 * 60 * 60 * 1000);
+            const nextDateStr = Utilities.formatDate(nextDate, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+            
+            const eventPayload = {
+              summary: focusTitle,
+              eventType: 'focusTime',
+              start: { date: dateStr },
+              end: { date: nextDateStr }
+            };
+            Calendar.Events.insert(eventPayload, 'primary');
+          } catch (e) {
+            console.warn("Création focusTime a échoué (souvent car compte gratuit). Fallback sur événement classique :", e.message);
+            cal.createAllDayEvent(focusTitle, dueDate);
+          }
         }
       }
     }
