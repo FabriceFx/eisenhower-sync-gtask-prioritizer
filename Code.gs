@@ -239,6 +239,12 @@ function mettreAJourFeuille(lignes) {
   
   // Valider et forcer les en-têtes (Ajout de la colonne Effort)
   const entetesAttendus = ['Titre de la tâche', 'Date d\'échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes'];
+  
+  // Sécurité : Étendre la feuille si elle n'a pas assez de colonnes (évite l'erreur "hors plage")
+  if (feuille.getMaxColumns() < entetesAttendus.length) {
+    feuille.insertColumnsAfter(feuille.getMaxColumns(), entetesAttendus.length - feuille.getMaxColumns());
+  }
+  
   feuille.getRange(1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]);
   
   // Effacer les anciennes données à partir de la ligne 2
@@ -252,7 +258,13 @@ function mettreAJourFeuille(lignes) {
     let archiveFeuille = classeur.getSheetByName('Archives');
     if (!archiveFeuille) {
       archiveFeuille = classeur.insertSheet('Archives');
-      archiveFeuille.appendRow(['Date Archivage', 'Titre', 'Échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes']);
+    }
+    const entetesArchives = ['Date Archivage', 'Titre', 'Échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes'];
+    if (archiveFeuille.getMaxColumns() < entetesArchives.length) {
+      archiveFeuille.insertColumnsAfter(archiveFeuille.getMaxColumns(), entetesArchives.length - archiveFeuille.getMaxColumns());
+    }
+    if (archiveFeuille.getLastRow() === 0) {
+      archiveFeuille.appendRow(entetesArchives);
     }
     const valeursASauvegarder = feuille.getRange(2, 1, numRows, derniereColonne).getValues();
     const dateArchive = new Date();
