@@ -231,10 +231,10 @@ function mettreAJourFeuille(lignes) {
     return;
   }
   
-  // Chercher une feuille nommée "Tâches" ou prendre la première
+  // Chercher une feuille nommée "Tâches" ou la créer si elle n'existe pas
   let feuille = classeur.getSheetByName('Tâches');
   if (!feuille) {
-    feuille = classeur.getSheets()[0];
+    feuille = classeur.insertSheet('Tâches', 0);
   }
   
   // Valider et forcer les en-têtes (Ajout de la colonne Effort)
