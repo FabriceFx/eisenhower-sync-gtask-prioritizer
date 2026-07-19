@@ -221,6 +221,28 @@ function timeboxerTachesCritiques(tachesCritiques) {
 }
 
 /**
+ * Sécurise l'appel à getRange en ajoutant automatiquement des lignes/colonnes si nécessaire.
+ */
+function getRangeSafe(sheet, row, col, numRows, numCols) {
+  const maxRows = sheet.getMaxRows();
+  const maxCols = sheet.getMaxColumns();
+  
+  // S'assurer qu'il y a au moins 1 ligne et 1 colonne (Sheets bug prevention)
+  const rowsToAdd = (row + numRows - 1) - maxRows;
+  if (rowsToAdd > 0) {
+    // try/catch au cas où la feuille serait totalement vide sans aucune dimension
+    try { sheet.insertRowsAfter(maxRows || 1, rowsToAdd); } catch(e) {}
+  }
+  
+  const colsToAdd = (col + numCols - 1) - maxCols;
+  if (colsToAdd > 0) {
+    try { sheet.insertColumnsAfter(maxCols || 1, colsToAdd); } catch(e) {}
+  }
+  
+  return sheet.getRange(row, col, numRows, numCols);
+}
+
+/**
  * Met à jour la feuille Google Sheets avec les nouvelles données.
  * @param {Array<Array>} lignes Les données à insérer.
  */
@@ -239,13 +261,7 @@ function mettreAJourFeuille(lignes) {
   
   // Valider et forcer les en-têtes (Ajout de la colonne Effort)
   const entetesAttendus = ['Titre de la tâche', 'Date d\'échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes'];
-  
-  // Sécurité : Étendre la feuille si elle n'a pas assez de colonnes (évite l'erreur "hors plage")
-  if (feuille.getMaxColumns() < entetesAttendus.length) {
-    feuille.insertColumnsAfter(feuille.getMaxColumns(), entetesAttendus.length - feuille.getMaxColumns());
-  }
-  
-  feuille.getRange(1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]);
+  getRangeSafe(feuille, 1, 1, 1, entetesAttendus.length).setValues([entetesAttendus]);
   
   // Effacer les anciennes données à partir de la ligne 2
   const lastRow = feuille.getLastRow();
@@ -260,13 +276,12 @@ function mettreAJourFeuille(lignes) {
       archiveFeuille = classeur.insertSheet('Archives');
     }
     const entetesArchives = ['Date Archivage', 'Titre', 'Échéance', 'Urgent', 'Important', 'Effort', 'Quadrant', 'Statut', 'Notes'];
-    if (archiveFeuille.getMaxColumns() < entetesArchives.length) {
-      archiveFeuille.insertColumnsAfter(archiveFeuille.getMaxColumns(), entetesArchives.length - archiveFeuille.getMaxColumns());
-    }
+    
     if (archiveFeuille.getLastRow() === 0) {
-      archiveFeuille.appendRow(entetesArchives);
+      // Insérer les entêtes si la feuille est vierge
+      getRangeSafe(archiveFeuille, 1, 1, 1, entetesArchives.length).setValues([entetesArchives]);
     }
-    const valeursASauvegarder = feuille.getRange(2, 1, numRows, derniereColonne).getValues();
+    const valeursASauvegarder = getRangeSafe(feuille, 2, 1, numRows, derniereColonne).getValues();
     const dateArchive = new Date();
     const titresNouveaux = lignes.map(row => row[0]); // Le titre est dans la première colonne
     // Archiver uniquement les lignes (tâches) qui ont disparu de la nouvelle liste
@@ -276,15 +291,15 @@ function mettreAJourFeuille(lignes) {
       .map(row => [dateArchive].concat(row));
       
     if (lignesArchive.length > 0) {
-      archiveFeuille.getRange(archiveFeuille.getLastRow() + 1, 1, lignesArchive.length, lignesArchive[0].length).setValues(lignesArchive);
+      getRangeSafe(archiveFeuille, archiveFeuille.getLastRow() + 1, 1, lignesArchive.length, lignesArchive[0].length).setValues(lignesArchive);
     }
 
-    feuille.getRange(2, 1, numRows, derniereColonne).clearContent();
+    getRangeSafe(feuille, 2, 1, numRows, derniereColonne).clearContent();
   }
   
   // Si on a des données, les insérer en bloc (performance)
   if (lignes.length > 0) {
-    feuille.getRange(2, 1, lignes.length, lignes[0].length).setValues(lignes);
+    getRangeSafe(feuille, 2, 1, lignes.length, lignes[0].length).setValues(lignes);
   }
   
   // Nettoyage automatique des doublons dans l'onglet Archives
