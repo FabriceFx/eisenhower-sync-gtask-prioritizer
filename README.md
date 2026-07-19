@@ -11,8 +11,8 @@ L'outil analyse vos tâches (titres, dates d'échéance et notes) pour détermin
 ## 🚀 Fonctionnalités
 - Synchronisation automatique avec la liste par défaut de Google Tasks.
 - Classement par quadrant (Q1, Q2, Q3, Q4) basé sur :
-  - **Urgence** : Date d'échéance ≤ 3 jours OU présence du tag `#urgent` dans les notes.
-  - **Importance** : Présence des tags `#important` ou `#strategie` dans les notes.
+  - **Urgence** : Date d'échéance ≤ 3 jours OU présence du tag `#urgent` dans le titre ou les notes.
+  - **Importance** : Présence des tags `#important` ou `#strategie` dans le titre ou les notes.
 - Nettoyage et mise à jour automatique des données dans l'onglet `Tâches` avec **sauvegarde préalable** dans un onglet `Archives`.
 - Envoi automatique d'un rapport email esthétique (HTML/CSS) résumant la journée.
 - Alerte visuelle si le quadrant des "Crises" (Q1) dépasse celui de la "Stratégie" (Q2).

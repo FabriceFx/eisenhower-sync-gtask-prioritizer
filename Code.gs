@@ -84,13 +84,15 @@ function recupererEtClasserTaches() {
       let estUrgent = false;
       let estImportant = false;
       
+      const contenuRecherche = (titre + ' ' + notes).toLowerCase();
+      
       // Déterminer l'importance
-      if (notes.toLowerCase().includes('#important') || notes.toLowerCase().includes('#strategie')) {
+      if (contenuRecherche.includes('#important') || contenuRecherche.includes('#strategie')) {
         estImportant = true;
       }
       
       // Déterminer l'urgence
-      if (notes.toLowerCase().includes('#urgent')) {
+      if (contenuRecherche.includes('#urgent')) {
         estUrgent = true;
       } else if (tache.due) {
         const dateEcheance = new Date(tache.due);
